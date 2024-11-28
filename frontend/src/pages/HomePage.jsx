@@ -32,6 +32,15 @@ const HomePage = () => (
       {/* Categories Section */}
       <CategoriesSection />
 
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-extrabold text-gray-800 mb-2">
+          Our Services
+        </h1>
+        <p className="text-lg text-gray-600">
+          We offer a wide range of services, all designed to meet your tech needs.
+        </p>
+      </div>
+
       {/* Services Section */}
       <ServicesSection />
     </div>

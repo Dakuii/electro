@@ -13,11 +13,18 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-red-600 text-white py-4 px-6 shadow-lg">
+    <header className="bg-primary text-white py-4 px-6 shadow-lg">
       <div className="container mx-auto flex items-center justify-between">
-        <div className="flex items-center">
-          <FaLaptop className="text-3xl mr-2" /> {/* Laptop icon */}
-          <h1 className="text-3xl font-bold">Electro+</h1>
+      <div className="flex items-center">
+          {/* Wrap FaLaptop and h1 inside a NavLink without changing its styling */}
+          <NavLink 
+            to="/" 
+            end
+            className="flex items-center text-white no-underline hover:text-gray-200" // Ensure no underline and keep it in line
+          >
+            <FaLaptop className="text-3xl mr-2" /> {/* Laptop icon */}
+            <h1 className="text-3xl font-bold">Electro+</h1>
+          </NavLink>
         </div>
         <nav className="space-x-6 flex items-center">
           <NavLink

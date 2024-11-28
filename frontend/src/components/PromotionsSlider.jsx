@@ -37,7 +37,28 @@ const PromotionsSlider = () => {
       showThumbs={false}
       showStatus={false}
       interval={4000}
+      showArrows={true} // Affiche les flèches de navigation (previous & next)
       className="mb-12"
+      renderArrowPrev={(clickHandler, hasPrev) => {
+        return hasPrev && (
+          <button
+            onClick={clickHandler}
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white bg-primary rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+          >
+            &#60;
+          </button>
+        );
+      }}
+      renderArrowNext={(clickHandler, hasNext) => {
+        return hasNext && (
+          <button
+            onClick={clickHandler}
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white bg-primary rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+          >
+            &#62;
+          </button>
+        );
+      }}
     >
       {promotions.map((promo, index) => (
         <div
@@ -50,11 +71,11 @@ const PromotionsSlider = () => {
             </h2>
             <a
               href={promo.link}
-              className="text-white text-lg underline hover:no-underline hover:text-gray-300 transition-colors duration-300 inline-flex items-center"
+              className="text-white text-lg underline hover:no-underline hover:text-primary transition-colors duration-300 inline-flex items-center"
             >
               Shop now
               <svg
-                className="ml-2 w-5 h-5 text-white"
+                className="ml-2 w-5 h-5 text-primary"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
