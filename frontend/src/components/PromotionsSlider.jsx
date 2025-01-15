@@ -1,32 +1,32 @@
 import { Carousel } from "react-responsive-carousel";
 import "react-responsive-carousel/lib/styles/carousel.min.css";
 
-import mobilePhone4 from "../assets/products/phones/mobilePhone4.png";
-import laptop4 from "../assets/products/laptops/laptop4.png";
-import earphone4 from "../assets/products/earphones/earphone4.png";
-import smartwatch4 from "../assets/products/smartwatches/smartwatch4.png";
+import laptop from "../assets/lpd.png";
+import phone from "../assets/fpd.png";
+import smartwatch from "../assets/sm.png";
+import headphone from "../assets/hd.png";
 
 const PromotionsSlider = () => {
   const promotions = [
     {
-      title: "10% Off on OnePlus 9 Pro",
-      image: mobilePhone4,
-      link: "/mobile-phones",
+      title: "Your Dream Products, Now on Sale",
+      image: laptop,
+      link: "/products",
     },
     {
-      title: "20% Off on Lenovo Thinkpad X1",
-      image: laptop4,
-      link: "/laptops",
+      title: "Unlock Exclusive Deals, Shop More, Save More!",
+      image: phone,
+      link: "/products",
     },
     {
-      title: "25% Off on Sennheiser Momentum 4",
-      image: earphone4,
-      link: "/headphones-earbuds",
+      title: "Shop Today, Enjoy Tomorrow",
+      image: smartwatch,
+      link: "/products",
     },
     {
-      title: "15% Off on Fitbit Sense 2",
-      image: smartwatch4,
-      link: "/smartwatches",
+      title: "Your Perfect Deal Is Waiting, Shop and Save Today!",
+      image: headphone,
+      link: "/products",
     },
   ];
 
@@ -42,19 +42,19 @@ const PromotionsSlider = () => {
       {promotions.map((promo, index) => (
         <div
           key={index}
-          className="flex items-center bg-black p-8 rounded-lg shadow-lg max-w-screen-lg mx-auto"
+          className="flex items-center bg-gradient-to-r from-red-500 to-red-600 p-8 rounded-xl shadow-xl max-w-screen-lg mx-auto transition-all duration-500 transform hover:scale-105"
         >
-          <div className="flex-1 text-left">
-            <h2 className="text-3xl font-bold text-white mb-4">
+          <div className="flex-1 text-left space-y-4">
+            <h2 className="text-4xl font-semibold text-white mb-4">
               {promo.title}
             </h2>
             <a
               href={promo.link}
-              className="text-white text-lg underline hover:no-underline hover:text-gray-300 transition-colors duration-300 inline-flex items-center"
+              className="text-white text-xl font-medium underline hover:no-underline hover:text-red-100 transition-colors duration-300 inline-flex items-center"
             >
               Shop now
               <svg
-                className="ml-2 w-5 h-5 text-white"
+                className="ml-2 w-6 h-6 text-white"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -73,7 +73,7 @@ const PromotionsSlider = () => {
             <img
               src={promo.image}
               alt={promo.title}
-              className="h-80 w-full object-contain rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-300"
+              className="h-80 w-full object-cover rounded-xl shadow-2xl transform hover:scale-105 transition-transform duration-300"
             />
           </div>
         </div>

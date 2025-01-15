@@ -1,4 +1,6 @@
 const User = require("../models/User");
+const Cart = require("../models/Cart");
+const Product = require("../models/Product");
 const generateToken = require("../utils/generateToken");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
@@ -40,6 +42,7 @@ const loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         token: generateToken(user._id),
+        role: user.role, // Include the role in the response
       });
     } else {
       res.status(401).json({ message: "Invalid email or password" });
@@ -118,52 +121,6 @@ const updateUserProfile = async (req, res) => {
 };
 
 // // Request Password Reset Link
-// const requestPasswordReset = async (req, res) => {
-//   const { email } = req.body;
-
-//   try {
-//     const user = await User.findOne({ email });
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     // Generate a reset token
-//     const resetToken = crypto.randomBytes(32).toString("hex");
-
-//     // Set token and expiration
-//     user.resetPasswordToken = crypto
-//       .createHash("sha256")
-//       .update(resetToken)
-//       .digest("hex");
-//     user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
-//     await user.save();
-
-//     // Send email
-//     const resetUrl = `${req.protocol}://${req.get(
-//       "host"
-//     )}/api/auth/reset-password/${resetToken}`;
-//     const message = `You requested a password reset. Click the link below to reset your password:\n\n${resetUrl}`;
-
-//     const transporter = nodemailer.createTransport({
-//       service: "gmail",
-//       auth: {
-//         user: process.env.EMAIL_USER,
-//         pass: process.env.EMAIL_PASS,
-//       },
-//     });
-
-//     await transporter.sendMail({
-//       from: process.env.EMAIL_USER,
-//       to: user.email,
-//       subject: "Password Reset Request",
-//       text: message,
-//     });
-
-//     res.status(200).json({ message: "Reset link sent to email" });
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
 
 const requestPasswordReset = async (req, res) => {
   const { email } = req.body;
@@ -209,9 +166,6 @@ const requestPasswordReset = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
-
-
 
 // // Reset Password
 const resetPassword = async (req, res) => {
@@ -280,12 +234,232 @@ const sendEmailToAdmin = async (req, res) => {
 
     await transporter.sendMail(userEmailOptions);
 
-    res.status(200).json({ message: "Your message has been sent successfully!" });
+    res
+      .status(200)
+      .json({ message: "Your message has been sent successfully!" });
   } catch (error) {
-    res.status(500).json({ message: "Failed to send email", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to send email", error: error.message });
   }
 };
 
+// Add product to cart
+const addToCart = async (req, res) => {
+  const { productId, quantity } = req.body;
+
+  if (!productId || !quantity) {
+    return res
+      .status(400)
+      .json({ message: "Product ID and quantity are required." });
+  }
+
+  try {
+    const product = await Product.findById(productId);
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found." });
+    }
+
+    if (quantity > product.quantity) {
+      return res
+        .status(400)
+        .json({ message: `Only ${product.quantity} units available.` });
+    }
+
+    let cart = await Cart.findOne({ user: req.user._id });
+
+    if (!cart) {
+      // Create a new cart if it doesn't exist
+      cart = new Cart({ user: req.user._id, products: [] });
+    }
+
+    const existingProductIndex = cart.products.findIndex(
+      (item) => item.product.toString() === productId
+    );
+
+    if (existingProductIndex >= 0) {
+      // Update quantity if the product is already in the cart
+      const newQuantity =
+        cart.products[existingProductIndex].quantity + quantity;
+      if (newQuantity > product.quantity) {
+        return res
+          .status(400)
+          .json({ message: `Only ${product.quantity} units available.` });
+      }
+      cart.products[existingProductIndex].quantity = newQuantity;
+    } else {
+      // Add new product to the cart
+      cart.products.push({ product: productId, quantity });
+    }
+
+    // Save the updated cart
+    await cart.save();
+
+    // Reduce the quantity of the product in the inventory
+    product.quantity -= quantity;
+    await product.save();
+
+    res
+      .status(200)
+      .json({ message: "Product added to cart and inventory updated.", cart });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const viewCart = async (req, res) => {
+  try {
+    const cart = await Cart.findOne({ user: req.user._id }).populate(
+      "products.product"
+    );
+
+    if (!cart || cart.products.length === 0) {
+      return res.status(404).json({ message: "Your cart is empty." });
+    }
+
+    const cartDetails = cart.products.map((item) => {
+      const product = item.product;
+      return {
+        productId: product._id,
+        name: product.name,
+        price: product.price,
+        description: product.description,
+        quantityInCart: item.quantity,
+        category: product.category, // Add category
+        image: product.image, // Add image
+      };
+    });
+
+    res.status(200).json({ cart: cartDetails });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Update Cart Quantity with stock changes
+const updateCartQuantity = async (req, res) => {
+  const { productId, newQuantity } = req.body;
+
+  if (!productId || newQuantity === undefined) {
+    return res
+      .status(400)
+      .json({ message: "Product ID and quantity are required." });
+  }
+
+  try {
+    const product = await Product.findById(productId);
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found." });
+    }
+
+    // Find the user's cart
+    let cart = await Cart.findOne({ user: req.user._id });
+
+    if (!cart) {
+      return res.status(404).json({ message: "Cart not found." });
+    }
+
+    const existingProductIndex = cart.products.findIndex(
+      (item) => item.product.toString() === productId
+    );
+
+    if (existingProductIndex >= 0) {
+      const currentQuantityInCart =
+        cart.products[existingProductIndex].quantity;
+
+      if (newQuantity > currentQuantityInCart) {
+        // Increasing the quantity in cart, reduce product stock
+        const quantityToIncrease = newQuantity - currentQuantityInCart;
+
+        if (product.quantity < quantityToIncrease) {
+          return res
+            .status(400)
+            .json({ message: `Only ${product.quantity} units available.` });
+        }
+
+        // Update product quantity in stock
+        product.quantity -= quantityToIncrease;
+      } else if (newQuantity < currentQuantityInCart) {
+        // Decreasing the quantity in cart, increase product stock
+        const quantityToDecrease = currentQuantityInCart - newQuantity;
+
+        // Update product quantity in stock
+        product.quantity += quantityToDecrease;
+      }
+
+      // Update the quantity in the cart
+      cart.products[existingProductIndex].quantity = newQuantity;
+
+      // Save the changes to the cart and product
+      await cart.save();
+      await product.save();
+
+      res.status(200).json({ message: "Cart updated successfully.", cart });
+    } else {
+      return res
+        .status(404)
+        .json({ message: "Product not found in your cart." });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Remove Item from Cart and Restore Stock
+const removeItemFromCart = async (req, res) => {
+  const { productId } = req.body;
+
+  if (!productId) {
+    return res.status(400).json({ message: "Product ID is required." });
+  }
+
+  try {
+    // Find the product by ID
+    const product = await Product.findById(productId);
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found." });
+    }
+
+    // Find the user's cart
+    let cart = await Cart.findOne({ user: req.user._id });
+
+    if (!cart) {
+      return res.status(404).json({ message: "Cart not found." });
+    }
+
+    const productInCartIndex = cart.products.findIndex(
+      (item) => item.product.toString() === productId
+    );
+
+    if (productInCartIndex >= 0) {
+      const productInCartQuantity = cart.products[productInCartIndex].quantity;
+
+      // Restore the stock by adding the quantity of the product in the cart
+      product.quantity += productInCartQuantity;
+
+      // Remove the product from the cart
+      cart.products.splice(productInCartIndex, 1);
+
+      // Save changes to the cart and product
+      await cart.save();
+      await product.save();
+
+      res.status(200).json({
+        message: "Product removed from cart and stock updated.",
+        cart,
+      });
+    } else {
+      return res
+        .status(404)
+        .json({ message: "Product not found in the cart." });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 module.exports = {
   registerUser,
@@ -296,4 +470,8 @@ module.exports = {
   requestPasswordReset,
   resetPassword,
   sendEmailToAdmin,
+  addToCart,
+  viewCart,
+  updateCartQuantity,
+  removeItemFromCart,
 };

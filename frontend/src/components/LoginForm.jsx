@@ -11,7 +11,7 @@ const LoginForm = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
+  
     try {
       const response = await axios.post(
         "http://localhost:5000/api/auth/login",
@@ -20,31 +20,27 @@ const LoginForm = () => {
           password: password,
         }
       );
-
+  
       if (response.status === 200) {
         console.log("Login successful");
-
-        // Store token in localStorage (for example, JWT token)
-        localStorage.setItem("authToken", response.data.token); // Assuming your response contains a 'token'
-
+  
+        // Store token and role in localStorage
+        localStorage.setItem("authToken", response.data.token);
+        localStorage.setItem("userRole", response.data.role); // Save the user's role
+  
         // Redirect to the home page or dashboard after successful login
         navigate("/");
       }
     } catch (error) {
-      // Handle specific error messages here
       if (error.response) {
-        // If error is returned from server (400, 401, etc.)
-        setError(
-          error.response.data.message ||
-            "Login failed. Please check your credentials."
-        );
+        setError(error.response.data.message || "Login failed.");
       } else {
-        // If error is not from the server (network error, etc.)
         setError("An error occurred. Please try again later.");
       }
       console.error("Error logging in:", error);
     }
   };
+  
 
   return (
     <div className="max-w-lg mx-auto bg-white p-8 rounded-lg shadow-md mt-12">

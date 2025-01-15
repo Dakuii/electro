@@ -1,20 +1,22 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
+// models/User.js
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    phone: { type: String, default: "" }, // Add phone number
-    address: { type: String, default: "" }, // Add address
-    resetPasswordToken: { type: String }, // Token for password reset
-    resetPasswordExpire: { type: Date },  // Expiration time for the reset token
+    phone: { type: String, default: "" },
+    address: { type: String, default: "" },
+    resetPasswordToken: { type: String },
+    resetPasswordExpire: { type: Date },
+    role: { type: String, enum: ["user", "admin"], default: "user" }, // Add role field
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
+
+
 
 // Hash password before saving
 userSchema.pre("save", async function (next) {
